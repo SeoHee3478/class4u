@@ -6,9 +6,9 @@ export interface Course {
   target_raw: string;
   institution_name: string;
   address: string;
-  start_date: string;
-  end_date: string;
-  registration_start: string;
-  registration_end: string;
-  homepage_url: string;
+  start_date: string | null;
+  end_date: string | null;
+  registration_start: string | null;
+  registration_end: string | null;
+  homepage_url: string | null;
 }
