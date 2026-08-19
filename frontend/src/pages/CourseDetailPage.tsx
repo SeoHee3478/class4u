@@ -124,6 +124,7 @@ export function CourseDetailPage() {
 
             {course.homepage_url && (
               <Button
+                nativeButton={false}
                 render={
                   <a
                     href={course.homepage_url}
