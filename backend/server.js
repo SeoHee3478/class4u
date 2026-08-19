@@ -1,11 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+const cron = require("node-cron");
 const pool = require("./db");
+const { fetchAndSaveCourses } = require("./fetchCourses");
 
 const app = express();
 const PORT = 3000;
+const CRON_SCHEDULE = process.env.FETCH_CRON_SCHEDULE || "0 3 * * *";
 
 app.use(cors());
+
+cron.schedule(CRON_SCHEDULE, () => {
+  console.log("강좌 정기 재수집 시작");
+  fetchAndSaveCourses().catch((err) =>
+    console.error("정기 재수집 실패:", err),
+  );
+});
 
 app.get("/courses", async (req, res) => {
   try {

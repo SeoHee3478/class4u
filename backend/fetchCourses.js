@@ -81,9 +81,11 @@ async function fetchAndSaveCourses() {
     console.log("DB 저장 완료!");
   } catch (error) {
     console.error("실패:", error.message);
-  } finally {
-    pool.end();
   }
 }
 
-fetchAndSaveCourses();
+module.exports = { fetchAndSaveCourses };
+
+if (require.main === module) {
+  fetchAndSaveCourses().finally(() => pool.end());
+}
