@@ -32,6 +32,23 @@ app.get("/courses", async (req, res) => {
   }
 });
 
+app.get("/courses/:id", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM courses WHERE id = $1", [
+      req.params.id,
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "강좌를 찾을 수 없습니다" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Error fetching course:", error);
+    res.status(500).json({ error: "DB 조회 실패" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
