@@ -12,12 +12,58 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { formatDate, getRegistrationStatus } from "@/lib/date";
+import {
+  formatDate,
+  getRegistrationStatus,
+  REGISTRATION_STATUS_OPTIONS,
+} from "@/lib/date";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"];
+const PRICE_TYPES = [
+  { value: "free", label: "무료" },
+  { value: "paid", label: "유료" },
+] as const;
+
+function toggleValue(list: string[], value: string): string[] {
+  return list.includes(value)
+    ? list.filter((v) => v !== value)
+    : [...list, value];
+}
+
+function ToggleFilterGroup({
+  options,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  options: readonly string[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      <Button
+        size="sm"
+        variant={selected.length === 0 ? "default" : "outline"}
+        onClick={onClear}
+      >
+        전체
+      </Button>
+      {options.map((opt) => (
+        <Button
+          key={opt}
+          size="sm"
+          variant={selected.includes(opt) ? "default" : "outline"}
+          onClick={() => onToggle(opt)}
+        >
+          {opt}
+        </Button>
+      ))}
+    </div>
+  );
+}
 
 function CourseCardSkeleton() {
   return (
@@ -38,9 +84,9 @@ function CourseCardSkeleton() {
 }
 
 export function CourseListPage() {
-  const [weekday, setWeekday] = useState<string>("");
-  const [maxPrice, setMaxPrice] = useState<string>("");
-  const debouncedMaxPrice = useDebouncedValue(maxPrice, 400);
+  const [weekdays, setWeekdays] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [priceType, setPriceType] = useState<"" | "free" | "paid">("");
 
   const {
     data: courses,
@@ -49,11 +95,12 @@ export function CourseListPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["courses", weekday, debouncedMaxPrice],
+    queryKey: ["courses", weekdays, statuses, priceType],
     queryFn: () =>
       fetchCourses({
-        weekday: weekday || undefined,
-        maxprice: debouncedMaxPrice ? parseInt(debouncedMaxPrice) : undefined,
+        weekdays: weekdays.length ? weekdays : undefined,
+        statuses: statuses.length ? statuses : undefined,
+        priceType: priceType || undefined,
       }),
   });
 
@@ -63,47 +110,48 @@ export function CourseListPage() {
         <h1 className="text-2xl font-bold mb-4">class4u 강좌 목록</h1>
 
         {/* 필터 UI */}
-        <div className="flex flex-wrap gap-3 items-center mb-6 p-4 bg-muted rounded-lg">
-          <div className="flex flex-wrap gap-1">
-            <Button
-              size="sm"
-              variant={weekday === "" ? "default" : "outline"}
-              onClick={() => setWeekday("")}
-            >
-              전체
-            </Button>
-            {WEEKDAYS.map((day) => (
-              <Button
-                key={day}
-                size="sm"
-                variant={weekday === day ? "default" : "outline"}
-                onClick={() => setWeekday(day)}
-              >
-                {day}
-              </Button>
-            ))}
+        <div className="flex flex-col gap-3 mb-6 p-4 bg-muted rounded-lg">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">요일</p>
+            <ToggleFilterGroup
+              options={WEEKDAYS}
+              selected={weekdays}
+              onToggle={(day) => setWeekdays(toggleValue(weekdays, day))}
+              onClear={() => setWeekdays([])}
+            />
           </div>
 
-          <div className="flex items-center gap-2 w-full">
-            <label className="text-sm text-muted-foreground shrink-0">
-              최대 가격
-            </label>
-            <Input
-              type="number"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              placeholder="예: 30000"
-              className="w-28"
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">신청 상태</p>
+            <ToggleFilterGroup
+              options={REGISTRATION_STATUS_OPTIONS}
+              selected={statuses}
+              onToggle={(s) => setStatuses(toggleValue(statuses, s))}
+              onClear={() => setStatuses([])}
             />
-            {maxPrice && (
+          </div>
+
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">수강료</p>
+            <div className="flex flex-wrap gap-1">
               <Button
-                variant="ghost"
                 size="sm"
-                onClick={() => setMaxPrice("")}
+                variant={priceType === "" ? "default" : "outline"}
+                onClick={() => setPriceType("")}
               >
-                초기화
+                전체
               </Button>
-            )}
+              {PRICE_TYPES.map((p) => (
+                <Button
+                  key={p.value}
+                  size="sm"
+                  variant={priceType === p.value ? "default" : "outline"}
+                  onClick={() => setPriceType(p.value)}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
 

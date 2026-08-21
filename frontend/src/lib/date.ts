@@ -16,6 +16,9 @@ function daysBetween(from: Date, to: Date): number {
   return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / MS_PER_DAY);
 }
 
+export const REGISTRATION_STATUS_OPTIONS = ["접수예정", "접수중", "접수마감"] as const;
+export type RegistrationStatusLabel = (typeof REGISTRATION_STATUS_OPTIONS)[number];
+
 export type RegistrationStatus = {
   label: string;
   variant: "default" | "secondary" | "destructive" | "outline";
@@ -32,18 +35,18 @@ export function getRegistrationStatus(
   const endDate = new Date(end);
 
   if (daysBetween(today, startDate) > 0) {
-    return { label: "모집예정", variant: "outline" };
+    return { label: "접수예정", variant: "outline" };
   }
 
   const daysLeft = daysBetween(today, endDate);
   if (daysLeft >= 0) {
     return {
-      label: `모집중 D-${daysLeft}`,
+      label: `접수중 D-${daysLeft}`,
       variant: daysLeft <= 3 ? "destructive" : "default",
     };
   }
 
-  return { label: "모집마감", variant: "secondary" };
+  return { label: "접수마감", variant: "secondary" };
 }
 
 export function getDurationWeeks(
