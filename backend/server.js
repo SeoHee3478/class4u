@@ -7,6 +7,14 @@ const { fetchAndSaveCourses } = require("./fetchCourses");
 const app = express();
 const PORT = 3000;
 const CRON_SCHEDULE = process.env.FETCH_CRON_SCHEDULE || "0 3 * * *";
+const REGISTRATION_STATUS_CASE = `
+  CASE
+    WHEN registration_start IS NULL OR registration_end IS NULL THEN NULL
+    WHEN registration_start > CURRENT_DATE THEN '접수예정'
+    WHEN registration_end >= CURRENT_DATE THEN '접수중'
+    ELSE '접수마감'
+  END
+`;
 
 app.use(cors());
 
@@ -19,19 +27,28 @@ cron.schedule(CRON_SCHEDULE, () => {
 
 app.get("/courses", async (req, res) => {
   try {
-    const { weekday, maxprice } = req.query;
-    console.log("받은 필터 조건:", { weekday, maxprice });
+    const { weekday, status, priceType } = req.query;
+    const weekdays = weekday ? [].concat(weekday) : [];
+    const statuses = status ? [].concat(status) : [];
+    console.log("받은 필터 조건:", { weekdays, statuses, priceType });
 
     let query = "SELECT * FROM courses WHERE 1=1";
     const params = [];
-    if (weekday) {
-      params.push(weekday);
-      query += ` AND $${params.length} = ANY(weekdays)`;
+
+    if (weekdays.length > 0) {
+      params.push(weekdays);
+      query += ` AND weekdays && $${params.length}::text[]`;
     }
 
-    if (maxprice) {
-      params.push(maxprice);
-      query += ` AND price <= $${params.length}`;
+    if (statuses.length > 0) {
+      params.push(statuses);
+      query += ` AND (${REGISTRATION_STATUS_CASE}) = ANY($${params.length}::text[])`;
+    }
+
+    if (priceType === "free") {
+      query += " AND price = 0";
+    } else if (priceType === "paid") {
+      query += " AND price > 0";
     }
 
     const result = await pool.query(query, params);
